@@ -1,0 +1,4 @@
+/* Minimal global reset, all other styles imported from custom css folder */
+* {
+  box-sizing: border-box;
+}

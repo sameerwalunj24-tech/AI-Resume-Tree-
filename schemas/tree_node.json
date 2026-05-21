@@ -1,0 +1,62 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "title": "TreeNode",
+    "type": "object",
+    "properties": {
+        "node_id": {
+            "type": "string"
+        },
+        "type": {
+            "type": "string",
+            "enum": [
+                "root",
+                "section",
+                "experience",
+                "project",
+                "education",
+                "skills"
+            ]
+        },
+        "title": {
+            "type": "string"
+        },
+        "level": {
+            "type": "integer",
+            "enum": [
+                0,
+                1,
+                2
+            ]
+        },
+        "summary": {
+            "type": "string"
+        },
+        "metadata": {
+            "type": "object",
+            "properties": {
+                "career_stage": { "type": ["string", "null"] },
+                "tech_stack": { "type": "array", "items": { "type": "string" } },
+                "duration_months": { "type": ["integer", "null"] },
+                "recency": { "type": ["string", "null"] },
+                "complexity": { "type": ["string", "null"] },
+                "has_outcome": { "type": "boolean" },
+                "responsibility_level": { "type": ["string", "null"] }
+            }
+        },
+        "children": {
+            "type": "array",
+            "items": {
+                "$ref": "#"
+            }
+        }
+    },
+    "required": [
+        "node_id",
+        "type",
+        "title",
+        "level",
+        "summary",
+        "metadata",
+        "children"
+    ]
+}

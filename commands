@@ -1,0 +1,8 @@
+# first activate the virtual environment 
+venv\Scripts\activate
+
+# then run the python server 
+uvicorn server:app --host 0.0.0.0 --port 8000 --reload
+
+# From the same project root
+python -m http.server 3000 -d frontend

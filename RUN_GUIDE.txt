@@ -1,0 +1,2 @@
+backend: python server.py
+frontend: python -m http.server 3000/frontend
