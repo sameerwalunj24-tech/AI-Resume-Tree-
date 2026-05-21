@@ -2,6 +2,76 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import '../css/pages/results.css';
 
+// TreeNodeView recursive component for the visual career tree explorer (M2 Tree structure)
+function TreeNodeView({ node, depth = 0 }) {
+  const [isOpen, setIsOpen] = useState(depth < 2);
+  const hasChildren = node.children && node.children.length > 0;
+  
+  const icon = node.type === 'root' ? '👤' : 
+               node.type === 'section' ? '📁' : 
+               node.type === 'experience' ? '💼' : 
+               node.type === 'project' ? '🚀' : 
+               node.type === 'education' ? '🎓' : '🛠️';
+
+  return (
+    <div className="tree-node" style={{ marginLeft: `${depth > 0 ? 12 : 0}px` }}>
+      <div 
+        className="tree-node-header flex items-center justify-between p-2 rounded hover-bg-elevated cursor-pointer"
+        onClick={() => hasChildren && setIsOpen(!isOpen)}
+        style={{ 
+          background: node.type === 'root' ? 'var(--brand-soft)' : 'transparent',
+          borderLeft: node.type === 'root' ? '3px solid var(--brand)' : '1px solid var(--border)',
+          paddingLeft: '8px',
+          transition: 'all 0.2s ease',
+          marginBottom: '2px'
+        }}
+      >
+        <div className="flex items-center gap-2 text-left">
+          {hasChildren && (
+            <span className="text-secondary" style={{ fontSize: '9px', width: '8px', display: 'inline-block' }}>
+              {isOpen ? '▼' : '▶'}
+            </span>
+          )}
+          <span style={{ fontSize: '14px' }}>{icon}</span>
+          <span className="font-600 text-t1 text-sm">{node.title || node.node_id}</span>
+          <span className="pill text-t3 border-none" style={{ fontSize: '8px', background: 'var(--surface)', padding: '1px 4px', textTransform: 'uppercase' }}>
+            {node.type}
+          </span>
+        </div>
+      </div>
+      
+      {isOpen && (
+        <div className="tree-node-content mt-1 flex-col gap-1 text-left" style={{ borderLeft: '1px dashed var(--border)', marginLeft: '12px', paddingLeft: '10px', paddingBottom: '6px' }}>
+          {node.summary && (
+            <p className="text-t2 text-xs italic mb-2 bg-elevated p-2 rounded leading-relaxed animate-fade-in" style={{ fontFamily: 'var(--font-body)', background: 'var(--elevated)' }}>
+              {node.summary}
+            </p>
+          )}
+          {node.metadata && Object.keys(node.metadata).length > 0 && (
+            <div className="metadata-grid flex flex-wrap gap-1 mb-2">
+              {Object.entries(node.metadata).map(([key, value]) => {
+                if (value === null || value === undefined || (Array.isArray(value) && value.length === 0)) return null;
+                return (
+                  <span key={key} className="pill" style={{ fontSize: '9px', border: '1px solid var(--border)', color: 'var(--brand)', background: 'transparent', padding: '1px 5px' }}>
+                    <strong>{key.replace('_', ' ')}:</strong> {Array.isArray(value) ? value.join(', ') : String(value)}
+                  </span>
+                );
+              })}
+            </div>
+          )}
+          {hasChildren && (
+            <div className="tree-node-children flex-col gap-1 mt-1">
+              {node.children.map((child, idx) => (
+                <TreeNodeView key={idx} node={child} depth={depth + 1} />
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function Results() {
   const navigate = useNavigate();
   const [data, setData] = useState(null);
@@ -9,6 +79,7 @@ export default function Results() {
   const [jdTitle, setJdTitle] = useState('Job Description');
   const [activeSection, setActiveSection] = useState('overall');
   const [expandedReqs, setExpandedReqs] = useState({});
+  const [visualizerTab, setVisualizerTab] = useState('resume');
 
   useEffect(() => {
     const raw = localStorage.getItem('lastResult');
@@ -24,7 +95,7 @@ export default function Results() {
 
     // Handle scroll spy to highlight sidebar nav links
     const handleScroll = () => {
-      const sections = ['overall', 'jdcompat', 'suggestions'];
+      const sections = ['overall', 'jdcompat', 'suggestions', 'optimizer'];
       for (const id of sections) {
         const el = document.getElementById(id);
         if (el && window.scrollY >= el.offsetTop - 150) {
@@ -140,6 +211,15 @@ export default function Results() {
                     Gaps & Strengths
                   </div>
                   <span id="nav-gap-badge" className="nav-badge badge-red">{gapsCount}</span>
+                </a>
+                <a href="#optimizer" className={`nav-link ${activeSection === 'optimizer' ? 'active' : ''}`} onClick={() => setActiveSection('optimizer')}>
+                  <div className="flex items-center gap-3">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <path d="M12 20h9M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path>
+                    </svg> 
+                    AI Optimizer
+                  </div>
+                  <span id="nav-optimize-badge" className="nav-badge badge-green" style={{ background: 'var(--excellent-soft)', color: 'var(--excellent)', border: 'none' }}>AI</span>
                 </a>
               </nav>
               
@@ -369,13 +449,101 @@ export default function Results() {
               </div>
             </section>
 
+            {/* AI Resume Optimizer Section (M5 FeedbackModule) */}
+            <section id="optimizer" className="mb-20 pt-4">
+              <h2 className="display-title-normal mb-2">AI Resume Optimizer</h2>
+              <p className="text-t3 mb-8 text-sm">Actionable advice and tailored rewrites to optimize your resume for this role.</p>
+              
+              {data.feedback?.overall_advice && (
+                <div className="card p-6 bg-surface border border-border mb-8 text-left">
+                  <h3 className="font-600 text-brand mb-3 flex items-center gap-2 text-sm uppercase tracking-wider">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
+                    Overall Strategy
+                  </h3>
+                  <p className="text-t2 text-sm leading-relaxed">{data.feedback.overall_advice}</p>
+                </div>
+              )}
+
+              {data.feedback?.improvement_tips?.length > 0 && (
+                <div className="mb-8 text-left">
+                  <h3 className="text-base font-600 text-primary mb-4">Improvement Tips</h3>
+                  <div className="flex-col gap-4">
+                    {data.feedback.improvement_tips.map((tip, idx) => (
+                      <div key={idx} className="card p-5 bg-surface border border-border flex-col gap-2">
+                        <div className="row space-between items-center">
+                          <span className={`pill ${tip.impact === 'high' ? 'badge-red' : tip.impact === 'medium' ? 'badge-amber' : 'badge-blue'} border-none`} style={{ fontSize: '10px' }}>
+                            {tip.impact?.toUpperCase()} IMPACT
+                          </span>
+                          <span className="mono-text text-t3" style={{ fontSize: '11px' }}>Node: {tip.node_id}</span>
+                        </div>
+                        <p className="text-t1 font-500 text-sm mt-1"><strong>Gap:</strong> {tip.gap}</p>
+                        <p className="text-t2 text-sm"><strong>Tip:</strong> {tip.tip}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {data.feedback?.resume_rewrites?.length > 0 && (
+                <div className="text-left">
+                  <h3 className="text-base font-600 text-primary mb-4">Suggested Resume Bullet Rewrites</h3>
+                  <div className="flex-col gap-6">
+                    {data.feedback.resume_rewrites.map((rw, idx) => (
+                      <div key={idx} className="card p-6 bg-surface border border-border flex-col gap-4">
+                        <div className="row space-between items-center" style={{ borderBottom: '1px solid var(--border)', paddingBottom: '10px' }}>
+                          <span className="pill mono-text" style={{ fontSize: '11px', background: 'var(--brand-soft)', color: 'var(--brand)', border: 'none' }}>
+                            Node: {rw.node_id}
+                          </span>
+                          <span className="text-xs text-t3 font-500">Suggested Bullet Update</span>
+                        </div>
+                        <div className="grid-2 gap-6">
+                          <div className="flex-col gap-2">
+                            <span className="text-xs text-secondary font-600 uppercase tracking-wide">Original Bullet</span>
+                            <div className="p-3 rounded text-sm text-t3 bg-elevated border border-border" style={{ textDecoration: 'line-through', opacity: 0.8, wordBreak: 'break-word' }}>
+                              {rw.original_summary}
+                            </div>
+                          </div>
+                          <div className="flex-col gap-2">
+                            <span className="text-xs text-excellent font-600 uppercase tracking-wide">Improved Bullet</span>
+                            <div className="p-3 rounded text-sm text-excellent bg-excellent-soft border border-excellent" style={{ borderStyle: 'dashed', wordBreak: 'break-word' }}>
+                              {rw.improved_summary}
+                            </div>
+                          </div>
+                        </div>
+                        <div className="p-3 rounded bg-elevated text-xs text-t2 leading-relaxed">
+                          <strong>Rationale:</strong> {rw.reason}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </section>
+
           </div>
 
           {/* 3. Right Sidebar: Resume Visualizer */}
           <aside className="resume-visualizer">
             <div style={{ position: 'sticky', top: '100px' }}>
-              <h2 className="display-title-normal mb-6">Annotated Resume</h2>
-              <div id="rdoc" className="rdoc-container card bg-surface">
+              <div className="row gap-2 mb-6" style={{ borderBottom: '1px solid var(--border)', paddingBottom: '12px' }}>
+                <button 
+                  className={`btn ${visualizerTab === 'resume' ? 'btn-primary' : ''} flex-1 justify-center`} 
+                  style={{ padding: '6px 12px', fontSize: '12px', background: visualizerTab === 'resume' ? 'var(--brand)' : 'transparent', color: visualizerTab === 'resume' ? 'white' : 'var(--text-secondary)' }}
+                  onClick={() => setVisualizerTab('resume')}
+                >
+                  Document View
+                </button>
+                <button 
+                  className={`btn ${visualizerTab === 'tree' ? 'btn-primary' : ''} flex-1 justify-center`} 
+                  style={{ padding: '6px 12px', fontSize: '12px', background: visualizerTab === 'tree' ? 'var(--brand)' : 'transparent', color: visualizerTab === 'tree' ? 'white' : 'var(--text-secondary)' }}
+                  onClick={() => setVisualizerTab('tree')}
+                >
+                  🌳 Career Tree View
+                </button>
+              </div>
+
+              {visualizerTab === 'resume' ? (
+                <div id="rdoc" className="rdoc-container card bg-surface">
                 
                 {/* Personal Info Header */}
                 <p className="rdoc-name">{r.personal_info?.name || 'Candidate'}</p>
@@ -504,6 +672,17 @@ export default function Results() {
                 )}
 
               </div>
+              ) : (
+                <div id="rtree" className="rdoc-container card bg-surface p-6 col gap-4 overflow-y-auto" style={{ maxHeight: 'calc(100vh - 240px)', background: 'var(--surface)', border: '1px solid var(--border)' }}>
+                  <div className="flex-col gap-1 text-left mb-4">
+                    <h3 className="text-sm font-600 text-brand">🌳 Hierarchical Career Tree</h3>
+                    <p className="text-t3 text-xs">Explore how ResumeTree parsed and summarized the resume's structured sections.</p>
+                  </div>
+                  <div className="tree-explorer flex-col gap-3">
+                    <TreeNodeView node={data.resume_tree} />
+                  </div>
+                </div>
+              )}
             </div>
           </aside>
 
