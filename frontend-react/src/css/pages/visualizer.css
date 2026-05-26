@@ -1,0 +1,138 @@
+/* visualizer.css - Dedicated Resume/Tree Visualizer Page Styling */
+
+.visualizer-page-container {
+  width: 100%;
+  max-width: 1680px;
+  margin: 0 auto;
+  padding: 0 32px;
+  box-sizing: border-box;
+}
+
+@media (max-width: 639px) {
+  .visualizer-page-container {
+    padding: 0 16px;
+  }
+}
+
+/* Header bar visualizer options */
+.view-control-bar {
+  display: flex;
+  background: var(--elevated);
+  padding: 4px;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  gap: 4px;
+}
+
+.view-control-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 16px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  border: none;
+  background: transparent;
+  color: var(--t2);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.view-control-btn:hover {
+  color: var(--t1);
+}
+
+.view-control-btn.active {
+  background: var(--surface);
+  color: var(--brand);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+/* Workspace Views */
+.visualizer-workspace {
+  margin-top: 24px;
+  margin-bottom: 48px;
+  height: calc(100vh - 180px);
+  min-height: 500px;
+  width: 100%;
+}
+
+/* Split Pane Grid */
+.visualizer-workspace.split-view {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 32px;
+}
+
+/* Single View Centered */
+.visualizer-workspace.single-view {
+  max-width: 860px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+/* Paper view card elements */
+.visualizer-card-pane {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.02);
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+}
+
+.pane-header {
+  padding: 16px 24px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.pane-title {
+  font-size: 14px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--t1);
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.pane-content-scrollable {
+  flex: 1;
+  overflow-y: auto;
+  padding: 24px;
+  box-sizing: border-box;
+}
+
+/* Document View white paper container */
+.visualizer-cv-paper {
+  background: #FFFFFF !important;
+  color: #1E293B !important;
+  padding: 40px !important;
+  border-radius: 12px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.03);
+  font-family: 'Inter', sans-serif;
+  line-height: 1.6;
+  font-size: 14px;
+  border: 1px solid #E2E8F0;
+  text-align: left;
+}
+
+/* Responsive collapse for split-view on small screens */
+@media (max-width: 1024px) {
+  .visualizer-workspace.split-view {
+    grid-template-columns: 1fr;
+    height: auto;
+    gap: 32px;
+  }
+  .visualizer-card-pane {
+    height: 80vh;
+  }
+}

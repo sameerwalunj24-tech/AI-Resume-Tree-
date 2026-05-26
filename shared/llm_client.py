@@ -32,8 +32,11 @@ class LLMClient:
         if not api_key:
             raise LLMError("GEMINI_API_KEY environment variable not set. Please add it to a .env file.")
             
-        self.client = genai.Client(api_key=api_key)
-        self.model_id = "gemini-2.5-flash"
+        self.client = genai.Client(
+            api_key=api_key, 
+            http_options=types.HttpOptions(timeout=30000)
+        )
+        self.model_id = "gemini-2.5-flash-lite"
         
         self.cache_file = "./data/api_cache/llm_cache.json"
         self._cache = self._load_cache()
@@ -67,7 +70,7 @@ class LLMClient:
 
         target_model = model or self.model_id
         max_retries = 5
-        base_delays = [5, 10, 20, 40, 60]
+        base_delays = [3, 6, 12, 24, 45]
 
         for attempt in range(max_retries):
             try:

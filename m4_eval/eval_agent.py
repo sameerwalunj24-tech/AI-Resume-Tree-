@@ -39,7 +39,8 @@ class EvaluationAgent:
             try:
                 # Temperature 0.2
                 eval_json = self.llm.call_json(user_prompt, system_prompt, 0.2)
-                eval_json['eval_id'] = str(uuid.uuid4())
+                import hashlib
+                eval_json['eval_id'] = hashlib.sha256(user_prompt.encode()).hexdigest()[:16]
                 
                 self.validator.validate(eval_json, "eval_result.json")
                 return eval_json

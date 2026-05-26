@@ -35,6 +35,18 @@ class ResumeParser:
                     extracted = page.extract_text()
                     if extracted:
                         text += extracted + "\n"
+            # Fallback: OCR for image-based (scanned) PDFs
+            if not text.strip():
+                try:
+                    import pytesseract
+                    from pdf2image import convert_from_path
+                    images = convert_from_path(file_path, dpi=200)
+                    for img in images:
+                        ocr_text = pytesseract.image_to_string(img)
+                        if ocr_text:
+                            text += ocr_text + "\n"
+                except ImportError:
+                    pass  # OCR libraries not installed; will raise ParseError below
         elif ext in ['doc', 'docx']:
             doc = docx.Document(file_path)
             for para in doc.paragraphs:

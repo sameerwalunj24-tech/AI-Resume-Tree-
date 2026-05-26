@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
 import CanvasBackground from '../components/CanvasBackground';
 import { apiCall } from '../utils/api';
@@ -19,6 +20,7 @@ export default function Landing() {
   const [remainingTime, setRemainingTime] = useState(18);
   const [apiFinished, setApiFinished] = useState(false);
   const [apiError, setApiError] = useState(null);
+  const [showPaywall, setShowPaywall] = useState(false);
 
   const steps = [
     "Resume structure detected — 6 sections found",
@@ -66,6 +68,17 @@ export default function Landing() {
   // Run the AI analysis
   const handleAnalyze = async () => {
     if (!file || jdText.length < 100) return;
+
+    // Dynamic Paywall Check
+    const userRaw = localStorage.getItem('auth_user');
+    if (!userRaw) {
+      const scans = parseInt(localStorage.getItem('free_scan_count') || '0', 10);
+      if (scans >= 1) {
+        setShowPaywall(true);
+        return;
+      }
+    }
+
     setIsProcessing(true);
     setRemainingTime(18);
     setApiFinished(false);
@@ -82,6 +95,33 @@ export default function Landing() {
         localStorage.setItem('lastResult', JSON.stringify(data));
         localStorage.setItem('lastFilename', file.name);
         localStorage.setItem('lastJD', jdText);
+
+        // Update paywall/history
+        const rawUser = localStorage.getItem('auth_user');
+        if (!rawUser) {
+          localStorage.setItem('free_scan_count', '1');
+        } else {
+          const user = JSON.parse(rawUser);
+          if (user.role === 'employee') {
+            const historyRaw = localStorage.getItem('employee_scan_history') || '[]';
+            const history = JSON.parse(historyRaw);
+            const roleMatch = jdText.match(/(?:title|role|position|job)\s*:\s*([^\n\r]+)/i) 
+              || jdText.match(/([a-zA-Z\s]{5,30}\s+(?:Engineer|Developer|Manager|Analyst|Specialist|Designer))/i);
+            const roleName = roleMatch ? roleMatch[1].trim() : "Target Position";
+            
+            const newScan = {
+              id: `eval_${Date.now()}`,
+              timestamp: Date.now(),
+              filename: file.name,
+              role: roleName,
+              score: data.overall_score || data.ats_score || 75,
+              result: data
+            };
+            history.unshift(newScan);
+            localStorage.setItem('employee_scan_history', JSON.stringify(history));
+          }
+        }
+
         setApiFinished(true);
       })
       .catch((err) => {
@@ -278,52 +318,123 @@ export default function Landing() {
       </main>
 
       {/* Processing Animation Overlay */}
-      <div className={`processing-overlay ${isProcessing ? 'active' : ''}`} id="processing-overlay">
-        <div className="card flex-col items-center justify-center p-8 w-full max-w-lg shadow-2xl relative overflow-hidden bg-surface border border-border">
-          <div className="relative w-full h-[6px] bg-border-hi rounded-full overflow-hidden mb-8">
-            <div 
-              id="progress-bar" 
-              className="absolute left-0 top-0 h-full bg-brand transition-all" 
-              style={{ 
-                width: `${Math.min(100, ((activeStepIndex + 1) / steps.length) * 100)}%`,
-                transitionDuration: '500ms'
-              }}
-            />
-          </div>
+      {isProcessing && createPortal(
+        <div className="processing-overlay active" id="processing-overlay">
+          <div className="card flex-col items-center justify-center p-8 w-full max-w-lg shadow-2xl relative overflow-hidden bg-surface border border-border">
+            <div className="relative w-full h-[6px] bg-border-hi rounded-full overflow-hidden mb-8">
+              <div 
+                id="progress-bar" 
+                className="absolute left-0 top-0 h-full bg-brand transition-all" 
+                style={{ 
+                  width: `${Math.min(100, ((activeStepIndex + 1) / steps.length) * 100)}%`,
+                  transitionDuration: '500ms'
+                }}
+              />
+            </div>
 
-          <h3 className="font-display text-2xl mb-2 text-primary font-400">Evaluating Resume Compatibility</h3>
-          <p id="time-est" className="text-sm text-secondary mb-8">
-            {remainingTime > 0 ? `${remainingTime}s remaining` : "Processing with AI... (this may take up to 2 mins)"}
-          </p>
+            <h3 className="font-display text-2xl mb-2 text-primary font-400">Evaluating Resume Compatibility</h3>
+            <p id="time-est" className="text-sm text-secondary mb-8">
+              {remainingTime > 0 ? `${remainingTime}s remaining` : "Processing with AI... (this may take up to 2 mins)"}
+            </p>
 
-          <div id="progress-steps" className="flex-col gap-4 w-full">
-            {steps.map((msg, i) => {
-              const isFinished = activeStepIndex > i;
-              const isActive = activeStepIndex === i;
-              return (
-                <div key={i} className="flex items-center gap-3" style={{ opacity: activeStepIndex >= i ? 1 : 0.3 }}>
-                  {isFinished ? (
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--excellent)" strokeWidth="2" className="step-icon">
-                      <path d="M20 6L9 17l-5-5"></path>
-                    </svg>
-                  ) : isActive ? (
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--brand)" strokeWidth="2" className="animate-spin step-icon">
-                      <path d="M21 12a9 9 0 1 1-6.219-8.56"></path>
-                    </svg>
-                  ) : (
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--border-hi)" strokeWidth="2" className="step-icon">
-                      <circle cx="12" cy="12" r="10"></circle>
-                    </svg>
-                  )}
-                  <span className={`step-text ${isActive ? 'text-brand font-500' : 'text-t1'}`} style={{ fontSize: '14px' }}>
-                    {msg}
-                  </span>
-                </div>
-              );
-            })}
+            <div id="progress-steps" className="flex-col gap-4 w-full">
+              {steps.map((msg, i) => {
+                const isFinished = activeStepIndex > i;
+                const isActive = activeStepIndex === i;
+                return (
+                  <div key={i} className="flex items-center gap-3" style={{ opacity: activeStepIndex >= i ? 1 : 0.3 }}>
+                    {isFinished ? (
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--excellent)" strokeWidth="2" className="step-icon">
+                        <path d="M20 6L9 17l-5-5"></path>
+                      </svg>
+                    ) : isActive ? (
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--brand)" strokeWidth="2" className="animate-spin step-icon">
+                        <path d="M21 12a9 9 0 1 1-6.219-8.56"></path>
+                      </svg>
+                    ) : (
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--border-hi)" strokeWidth="2" className="step-icon">
+                        <circle cx="12" cy="12" r="10"></circle>
+                      </svg>
+                    )}
+                    <span className={`step-text ${isActive ? 'text-brand font-500' : 'text-t1'}`} style={{ fontSize: '14px' }}>
+                      {msg}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
           </div>
-        </div>
-      </div>
+        </div>,
+        document.body
+      )}
+
+      {/* Premium Paywall Modal */}
+      {showPaywall && createPortal(
+        <div className="processing-overlay active" id="paywall-overlay" style={{ zIndex: 1100 }}>
+          <div className="card flex-col items-center justify-center p-8 w-full max-w-md shadow-2xl relative overflow-hidden bg-surface border border-border"
+            style={{ borderRadius: '24px', textAlign: 'center', gap: '20px' }}>
+            
+            {/* Lock illustration/icon */}
+            <div style={{
+              width: '64px', height: '64px', borderRadius: '50%', 
+              background: 'var(--brand-soft)', display: 'flex', 
+              alignItems: 'center', justifyContent: 'center', fontSize: '32px',
+              border: '1.5px solid var(--brand)', boxShadow: '0 0 20px var(--brand-glow)'
+            }}>
+              🔒
+            </div>
+
+            <h2 className="font-display text-2xl text-primary font-700" style={{ letterSpacing: '-0.02em', margin: '0' }}>
+              Free Scan Limit Reached
+            </h2>
+            
+            <p className="text-secondary text-sm" style={{ lineHeight: '1.6', margin: '0 0 10px 0' }}>
+              Guest users are limited to <strong>1 Scan per day</strong>. Create a free Job Seeker account to unlock full premium features:
+            </p>
+
+            {/* List of features */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', width: '100%', textAlign: 'left', background: 'var(--elevated)', padding: '16px', borderRadius: '14px', border: '1px solid var(--border-hi)' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', color: 'var(--t1)' }}>
+                <span style={{ color: 'var(--brand)' }}>✓</span> <strong>Unlimited Scans</strong> (No daily limits)
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', color: 'var(--t1)' }}>
+                <span style={{ color: 'var(--brand)' }}>✓</span> <strong>Saved History Dashboard</strong> (Track progress)
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', color: 'var(--t1)' }}>
+                <span style={{ color: 'var(--brand)' }}>✓</span> <strong>Up to 3 Resume Profiles</strong>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', color: 'var(--t1)' }}>
+                <span style={{ color: 'var(--brand)' }}>✓</span> <strong>High-Fidelity PDF Exports</strong>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', color: 'var(--t1)' }}>
+                <span style={{ color: 'var(--brand)' }}>✓</span> <strong>Interactive Rewrites Editor</strong>
+              </div>
+            </div>
+
+            {/* Buttons */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', width: '100%', marginTop: '10px' }}>
+              <button 
+                className="btn btn-primary justify-center py-3" 
+                style={{ fontWeight: 600, width: '100%' }}
+                onClick={() => {
+                  setShowPaywall(false);
+                  navigate('/login');
+                }}
+              >
+                Sign Up / Log In →
+              </button>
+              <button 
+                className="btn btn-ghost justify-center py-3" 
+                style={{ fontWeight: 600, width: '100%', color: 'var(--t3)' }}
+                onClick={() => setShowPaywall(false)}
+              >
+                Maybe Later
+              </button>
+            </div>
+          </div>
+        </div>,
+        document.body
+      )}
     </>
   );
 }

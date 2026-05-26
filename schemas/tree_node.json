@@ -14,7 +14,25 @@
                 "experience",
                 "project",
                 "education",
-                "skills"
+                "skills",
+                "certifications",
+                "certification",
+                "award",
+                "awards",
+                "publication",
+                "publications",
+                "volunteer",
+                "summary",
+                "contact",
+                "achievement",
+                "achievements",
+                "activity",
+                "activities",
+                "language",
+                "languages",
+                "interest",
+                "interests",
+                "other"
             ]
         },
         "title": {

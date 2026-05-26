@@ -6,6 +6,8 @@ import ScrollToTop from './components/ScrollToTop';
 import Landing from './pages/Landing';
 import Upload from './pages/Upload';
 import Results from './pages/Results';
+import Visualizer from './pages/Visualizer';
+import Auth from './pages/Auth';
 import Features from './pages/Features';
 import Pricing from './pages/Pricing';
 import HowItWorks from './pages/HowItWorks';
@@ -54,6 +56,8 @@ export default function App() {
             <Route path="/" element={<Landing />} />
             <Route path="/upload" element={<Upload />} />
             <Route path="/results" element={<Results />} />
+            <Route path="/visualizer" element={<Visualizer />} />
+            <Route path="/login" element={<Auth />} />
             <Route path="/features" element={<Features />} />
             <Route path="/pricing" element={<Pricing />} />
             <Route path="/howitworks" element={<HowItWorks />} />
